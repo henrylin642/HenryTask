@@ -1,0 +1,396 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap");
+
+:root {
+  --bg: #f4f1ea;
+  --ink: #1f1d1a;
+  --muted: #7b7468;
+  --card: #ffffff;
+  --line: rgba(31, 29, 26, 0.12);
+  --accent: #e36c5b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at top, #ffffff 0%, #f4f1ea 48%, #ece6dc 100%);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+#root {
+  padding: 28px 18px 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  width: min(560px, 100%);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+header h1 {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 4vw, 38px);
+  letter-spacing: -0.04em;
+}
+
+.eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: var(--muted);
+}
+
+.count {
+  min-width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  background: #fff7ef;
+}
+
+.composer {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.composer input {
+  flex: 1;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.8);
+  min-width: 0;
+}
+
+.composer input[type="date"] {
+  flex: 0 0 auto;
+  min-width: 150px;
+}
+
+.composer button {
+  border: none;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-weight: 600;
+  background: var(--ink);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.composer button:active {
+  transform: translateY(1px);
+}
+
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 8px 24px rgba(22, 16, 8, 0.06);
+  transform: translateX(var(--swipe, 0px));
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
+  animation: fade-in 0.35s ease both;
+}
+
+.task.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.task.editing {
+  cursor: default;
+}
+
+.task:hover {
+  box-shadow: 0 12px 28px rgba(22, 16, 8, 0.08);
+}
+
+.task-main {
+  flex: 1;
+  display: grid;
+  gap: 4px;
+}
+
+.task-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.task-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.task-id {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.task-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.color-block {
+  min-width: 56px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: grid;
+  place-items: center;
+  padding: 0 6px;
+  cursor: pointer;
+}
+
+.color-block.red {
+  background: #e65d4c;
+  color: #fff7f2;
+}
+
+.color-block.yellow {
+  background: #f0b73a;
+  color: #3a2b00;
+}
+
+.color-block.blue {
+  background: #4b76e6;
+  color: #eef3ff;
+}
+
+.drag-handle {
+  width: 16px;
+  height: 16px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: linear-gradient(135deg, #ffffff, #f2ede3);
+  cursor: grab;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.drag-handle::before,
+.drag-handle::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(31, 29, 26, 0.35);
+}
+
+.drag-handle::before {
+  top: 4px;
+}
+
+.drag-handle::after {
+  bottom: 4px;
+}
+
+.task.dragging .drag-handle {
+  cursor: grabbing;
+}
+
+.color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 0;
+  cursor: pointer;
+}
+
+.color-dot.red {
+  background: #e65d4c;
+}
+
+.color-dot.yellow {
+  background: #f0b73a;
+}
+
+.color-dot.blue {
+  background: #4b76e6;
+}
+
+.edit-button {
+  border: 1px solid var(--line);
+  background: rgba(31, 29, 26, 0.04);
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.edit-button:hover {
+  background: rgba(31, 29, 26, 0.08);
+}
+
+.task-main.editing {
+  gap: 8px;
+}
+
+.edit-title {
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 8px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  width: 100%;
+}
+
+.edit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.edit-meta label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-picker {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 0;
+  cursor: pointer;
+}
+
+.color-swatch.red {
+  background: #e65d4c;
+}
+
+.color-swatch.yellow {
+  background: #f0b73a;
+}
+
+.color-swatch.blue {
+  background: #4b76e6;
+}
+
+.color-swatch.active {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.edit-meta input[type="date"] {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 4px 6px;
+  font-size: 12px;
+  background: #ffffff;
+  color: var(--ink);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-actions button {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.edit-actions button.primary {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+}
+
+.empty {
+  padding: 18px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  text-align: center;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.drop-zone {
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 540px) {
+  .composer {
+    flex-direction: column;
+  }
+
+  .composer button {
+    height: 42px;
+  }
+
+  .composer input[type="date"] {
+    width: 100%;
+  }
+}
