@@ -65,10 +65,10 @@ const TaskRow = ({
   onDraftTitleChange: (value: string) => void;
   onDraftDeadlineChange: (value: string) => void;
   onEditKeyDown: (event: KeyboardEvent<HTMLInputElement>) => void;
-  onDragStart: (event: DragEvent<HTMLLIElement>, id: string) => void;
+  onDragStart: (event: DragEvent<HTMLElement>, id: string) => void;
   onDragEnd: () => void;
-  onDrop: (event: DragEvent<HTMLLIElement>, id: string) => void;
-  onDragOver: (event: DragEvent<HTMLLIElement>) => void;
+  onDrop: (event: DragEvent<HTMLElement>, id: string) => void;
+  onDragOver: (event: DragEvent<HTMLElement>) => void;
 }) => {
   const pointer = useRef<PointerState>({
     active: false,
@@ -194,9 +194,8 @@ const TaskRow = ({
                   <button
                     key={color}
                     type="button"
-                    className={`color-swatch ${color} ${
-                      task.color === color ? "active" : ""
-                    }`}
+                    className={`color-swatch ${color} ${task.color === color ? "active" : ""
+                      }`}
                     onClick={() => onSetColor(task.id, color)}
                     aria-label={`設定顏色 ${color}`}
                   />
@@ -365,7 +364,7 @@ export default function App() {
     );
   };
 
-  const handleDragStart = (event: DragEvent<HTMLLIElement>, id: string) => {
+  const handleDragStart = (event: DragEvent<HTMLElement>, id: string) => {
     event.dataTransfer.setData("text/plain", id);
     event.dataTransfer.effectAllowed = "move";
     setDragId(id);
@@ -375,7 +374,7 @@ export default function App() {
     setDragId(null);
   };
 
-  const handleDrop = (event: DragEvent<HTMLLIElement>, targetId: string) => {
+  const handleDrop = (event: DragEvent<HTMLElement>, targetId: string) => {
     event.preventDefault();
     const id = event.dataTransfer.getData("text/plain") || dragId;
     if (!id) return;
