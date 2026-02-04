@@ -578,6 +578,15 @@ export default function App() {
           />
         ))}
       </ul>
+
+      <footer style={{ marginTop: '40px', padding: '20px 0', textAlign: 'center', opacity: 0.3, fontSize: '10px' }}>
+        <button
+          onClick={() => (window as any).forceUpdate?.()}
+          style={{ background: 'none', border: 'none', color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
+        >
+          強制重新載入應用程式 (修復快取問題)
+        </button>
+      </footer>
     </div>
   );
 }

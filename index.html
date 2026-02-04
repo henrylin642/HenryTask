@@ -8,9 +8,26 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="極簡待辦" />
+    <meta name="app-version" content="3.1" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <title>極簡待辦</title>
+    <script>
+      // Diagnostic tool to force update if stuck
+      window.forceUpdate = function() {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let registration of registrations) registration.unregister();
+            caches.keys().then(keys => {
+              for (let key of keys) caches.delete(key);
+              window.location.reload(true);
+            });
+          });
+        } else {
+          window.location.reload(true);
+        }
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>

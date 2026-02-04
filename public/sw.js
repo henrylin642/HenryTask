@@ -1,4 +1,4 @@
-const CACHE_NAME = "todo-pwa-v2";
+const CACHE_NAME = "todo-pwa-v3";
 const CORE_ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -25,6 +25,21 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Network-First for HTML/Root to avoid caching old versions of index.html
+  if (CORE_ASSETS.includes(url.pathname) || url.pathname === "/") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Cache-First for assets like CSS/JS/Images
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
@@ -38,3 +53,4 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
