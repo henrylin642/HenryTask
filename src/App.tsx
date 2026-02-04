@@ -25,11 +25,7 @@ const formatDate = (value: string) => {
 const toDateInputValue = (value: string | null) => value ?? "";
 const parseDateInput = (value: string) => (value ? value : null);
 
-const getMinPosition = (tasks: Task[]) =>
-  tasks.length ? Math.min(...tasks.map((task) => task.position)) : 0;
 
-const getMaxPosition = (tasks: Task[]) =>
-  tasks.length ? Math.max(...tasks.map((task) => task.position)) : 0;
 
 const TaskRow = ({
   task,
