@@ -77,12 +77,12 @@ const TaskRow = ({
     if (!target) return false;
     if (target instanceof Element) {
       return Boolean(
-        target.closest("button, input, label, select, textarea, a")
+        target.closest("button, input, label, select, textarea, a, [role='button']")
       );
     }
     if (target instanceof Node && target.parentElement) {
       return Boolean(
-        target.parentElement.closest("button, input, label, select, textarea, a")
+        target.parentElement.closest("button, input, label, select, textarea, a, [role='button']")
       );
     }
     return false;
@@ -157,7 +157,6 @@ const TaskRow = ({
         draggable={!isEditing}
         onDragStart={(event) => onDragStart(event, task.id)}
         onDragEnd={onDragEnd}
-        onPointerDown={(event) => event.stopPropagation()}
         aria-label="拖曳排序"
         title="拖曳排序"
         role="button"

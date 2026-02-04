@@ -22,6 +22,7 @@ import "mobile-drag-drop/default.css";
 
 polyfill({
   dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
+  holdToDrag: 150,
 });
 
 // Fix for iOS prevent default scrolling when dragging
