@@ -7,4 +7,5 @@ export type Task = {
   color: TaskColor;
   position: number;
   deadline: string | null;
+  status: "todo" | "done";
 };

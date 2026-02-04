@@ -225,7 +225,17 @@ const TaskRow = ({
 
 export default function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const taskList = useMemo(() => tasks, [tasks]);
+
+  const todoTasks = useMemo(
+    () => tasks.filter((t) => t.status !== "done").sort((a, b) => a.position - b.position),
+    [tasks]
+  );
+
+  const doneTasks = useMemo(
+    () => tasks.filter((t) => t.status === "done").sort((a, b) => a.position - b.position),
+    [tasks]
+  );
+
   const [title, setTitle] = useState("");
   const [deadlineInput, setDeadlineInput] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
@@ -236,7 +246,7 @@ export default function App() {
   const loadTasks = async () => {
     const { data, error } = await supabase
       .from("tasks")
-      .select("id,title,created_at,color,position,deadline")
+      .select("id,title,created_at,color,position,deadline,status")
       .order("position", { ascending: true });
     if (error) {
       console.error(error);
@@ -249,6 +259,7 @@ export default function App() {
       color: row.color as TaskColor,
       position: row.position as number,
       deadline: (row.deadline as string | null) ?? null,
+      status: (row.status as "todo" | "done") ?? "todo",
     }));
     setTasks(mapped);
   };
@@ -261,21 +272,46 @@ export default function App() {
     event.preventDefault();
     const trimmed = title.trim();
     if (!trimmed) return;
-    const minPosition = getMinPosition(taskList);
-    const position = taskList.length ? minPosition - 1 : 0;
-    const { error } = await supabase.from("tasks").insert({
+
+    // Insert at top
+    // Shift all existing todo tasks down? Or just use negative position? 
+    // Usually simpler to just use 0 and re-index or use min - 1.
+    const minPosition = todoTasks.length ? Math.min(...todoTasks.map(t => t.position)) : 0;
+    const position = minPosition - 1000;
+
+    // Optimistic update
+    const tempId = crypto.randomUUID();
+    const newTask: Task = {
+      id: tempId,
       title: trimmed,
       color: "red",
       position,
       deadline: parseDateInput(deadlineInput),
-    });
-    if (error) {
-      console.error(error);
-      return;
-    }
+      createdAt: new Date().toISOString(),
+      status: "todo",
+    };
+
+    setTasks(prev => [...prev, newTask]);
     setTitle("");
     setDeadlineInput("");
-    void loadTasks();
+
+    const { data, error } = await supabase.from("tasks").insert({
+      title: trimmed,
+      color: "red",
+      position,
+      deadline: parseDateInput(deadlineInput),
+      status: "todo",
+    }).select().single();
+
+    if (error) {
+      console.error(error);
+      // Rollback
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+      return;
+    }
+
+    // Replace temp with real
+    setTasks(prev => prev.map(t => t.id === tempId ? { ...t, id: data.id } : t));
   };
 
   const setColor = async (taskId: string, color: TaskColor) => {
@@ -293,75 +329,76 @@ export default function App() {
   };
 
   const completeTask = async (id: string) => {
-    const maxPosition = getMaxPosition(taskList);
-    const position = taskList.length ? maxPosition + 1 : 0;
+    // Current behavior: Swipe completes task -> move to done
+    void updateStatus(id, "done");
+  };
+
+  const updateStatus = async (id: string, newStatus: "todo" | "done") => {
+    const list = newStatus === "todo" ? todoTasks : doneTasks;
+    // Append to end of target list
+    const maxPosition = list.length ? Math.max(...list.map(t => t.position)) : 0;
+    const position = maxPosition + 1000;
+
     const { error } = await supabase
       .from("tasks")
-      .update({ position })
+      .update({ status: newStatus, position })
       .eq("id", id);
+
     if (error) {
       console.error(error);
       return;
     }
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, position } : task))
-    );
+
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus, position } : t));
   };
 
   const reorder = async (draggedId: string, targetId: string) => {
     if (draggedId === targetId) return;
-    const list = taskList;
-    const dragIndex = list.findIndex((task) => task.id === draggedId);
-    const targetIndex = list.findIndex((task) => task.id === targetId);
-    if (dragIndex === -1 || targetIndex === -1) return;
 
-    const nextList = list.filter((task) => task.id !== draggedId);
-    const insertIndex = dragIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    nextList.splice(insertIndex, 0, list[dragIndex]);
+    const task = tasks.find(t => t.id === draggedId);
+    if (!task) return;
 
-    const updates = nextList.map((task, index) => ({
-      id: task.id,
-      position: index,
+    // Determine if target is in todo or done
+    const targetTask = tasks.find(t => t.id === targetId);
+    if (!targetTask) return;
+
+    const targetListType = targetTask.status;
+    const list = targetListType === "todo" ? todoTasks : doneTasks;
+
+    // Remove dragged from list (conceptually)
+    const filtered = list.filter(t => t.id !== draggedId);
+    const targetIndex = filtered.findIndex(t => t.id === targetId);
+
+    // Insert
+    // If dragging DOWN, insert AFTER target. If dragging UP, insert BEFORE?
+    // Simplified: always insert at index
+    filtered.splice(targetIndex, 0, task);
+
+    // Re-assign positions
+    const updates = filtered.map((t, i) => ({
+      id: t.id,
+      position: i * 1000,
+      status: targetListType
     }));
+
+    // Optimistic UI
+    setTasks(prev => {
+      const next = [...prev];
+      updates.forEach(u => {
+        const t = next.find(x => x.id === u.id);
+        if (t) {
+          t.position = u.position;
+          t.status = u.status;
+        }
+      });
+      return next;
+    });
+
     const { error } = await supabase
       .from("tasks")
       .upsert(updates, { onConflict: "id" });
-    if (error) {
-      console.error(error);
-      return;
-    }
-    setTasks(
-      nextList.map((task, index) => ({
-        ...task,
-        position: index,
-      }))
-    );
-  };
 
-  const moveToEnd = async (draggedId: string) => {
-    const list = taskList;
-    const dragIndex = list.findIndex((task) => task.id === draggedId);
-    if (dragIndex === -1) return;
-    const nextList = list.filter((task) => task.id !== draggedId);
-    nextList.push(list[dragIndex]);
-
-    const updates = nextList.map((task, index) => ({
-      id: task.id,
-      position: index,
-    }));
-    const { error } = await supabase
-      .from("tasks")
-      .upsert(updates, { onConflict: "id" });
-    if (error) {
-      console.error(error);
-      return;
-    }
-    setTasks(
-      nextList.map((task, index) => ({
-        ...task,
-        position: index,
-      }))
-    );
+    if (error) console.error(error);
   };
 
   const handleDragStart = (event: DragEvent<HTMLElement>, id: string) => {
@@ -374,21 +411,34 @@ export default function App() {
     setDragId(null);
   };
 
+  // Drop on a specific task
   const handleDrop = (event: DragEvent<HTMLElement>, targetId: string) => {
     event.preventDefault();
     const id = event.dataTransfer.getData("text/plain") || dragId;
-    if (!id) return;
+    if (!id || !targetId) return;
     void reorder(id, targetId);
     setDragId(null);
   };
 
-  const handleDropToEnd = (event: DragEvent<HTMLDivElement>) => {
+  // Drop on the "Completed" zone (generic) or "Todo" zone?
+  // We can just have a droppable area for the entire list
+
+  const handleDropToDone = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
     const id = event.dataTransfer.getData("text/plain") || dragId;
     if (!id) return;
-    void moveToEnd(id);
+    void updateStatus(id, "done");
     setDragId(null);
   };
+
+  const handleDropToTodo = (event: DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    const id = event.dataTransfer.getData("text/plain") || dragId;
+    if (!id) return;
+    void updateStatus(id, "todo");
+    setDragId(null);
+  };
+
 
   const startEdit = (task: Task) => {
     setEditingId(task.id);
@@ -442,7 +492,7 @@ export default function App() {
           <div className="eyebrow">極簡待辦</div>
           <h1>單一清單</h1>
         </div>
-        <div className="count">{taskList.length}</div>
+        <div className="count">{todoTasks.length}</div>
       </header>
 
       <form className="composer" onSubmit={addTask}>
@@ -461,9 +511,14 @@ export default function App() {
         <button type="submit">加入</button>
       </form>
 
-      <ul className="task-list">
-        {taskList.length === 0 && <li className="empty">尚無任務</li>}
-        {taskList.map((task, index) => (
+      <ul
+        className="task-list"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDropToTodo}
+        style={{ minHeight: '50px' }}
+      >
+        {todoTasks.length === 0 && <li className="empty">尚無任務</li>}
+        {todoTasks.map((task, index) => (
           <TaskRow
             key={task.id}
             task={task}
@@ -488,15 +543,46 @@ export default function App() {
         ))}
       </ul>
 
-      {taskList.length > 0 && (
-        <div
-          className="drop-zone"
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={handleDropToEnd}
-        >
-          拖曳到這裡可移到最底部
-        </div>
-      )}
+      <div className="section-header">
+        已完成
+      </div>
+
+      <ul
+        className="task-list"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleDropToDone}
+        style={{ minHeight: '80px' }}
+      >
+        {doneTasks.length === 0 && (
+          <div className="drop-zone">
+            拖曳到這裡完成
+          </div>
+        )}
+        {doneTasks.map((task, index) => (
+          <TaskRow
+            key={task.id}
+            task={task}
+            index={index}
+            isDragging={dragId === task.id}
+            isEditing={editingId === task.id}
+            draftTitle={draftTitle}
+            draftDeadline={draftDeadline}
+            onSetColor={setColor}
+            onSwipeComplete={() => updateStatus(task.id, "todo")} // Swipe done task to restore?
+            onStartEdit={startEdit}
+            onCancelEdit={cancelEdit}
+            onSaveEdit={saveEdit}
+            onDraftTitleChange={setDraftTitle}
+            onDraftDeadlineChange={setDraftDeadline}
+            onEditKeyDown={handleEditKeyDown}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDrop={handleDrop}
+            onDragOver={(event) => event.preventDefault()}
+          />
+        ))}
+      </ul>
     </div>
   );
 }
+

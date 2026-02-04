@@ -14,3 +14,16 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("/sw.js").catch(() => undefined);
   });
 }
+
+// Mobile Drag and Drop Polyfill
+import { polyfill } from "mobile-drag-drop";
+import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour";
+import "mobile-drag-drop/default.css";
+
+polyfill({
+  dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
+});
+
+// Fix for iOS prevent default scrolling when dragging
+window.addEventListener("touchmove", () => { }, { passive: false });
+
