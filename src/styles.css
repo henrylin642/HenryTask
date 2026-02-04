@@ -19,6 +19,7 @@ body {
   background: radial-gradient(circle at top, #ffffff 0%, #f4f1ea 48%, #ece6dc 100%);
   color: var(--ink);
   min-height: 100vh;
+  overscroll-behavior-y: contain;
 }
 
 #root {
