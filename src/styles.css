@@ -196,34 +196,41 @@ header h1 {
 }
 
 .drag-handle {
-  width: 16px;
-  height: 16px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: 1px solid var(--line);
   background: linear-gradient(135deg, #ffffff, #f2ede3);
   cursor: grab;
   position: relative;
   flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 3px;
 }
 
 .drag-handle::before,
 .drag-handle::after {
   content: "";
-  position: absolute;
-  left: 4px;
-  right: 4px;
+  width: 14px;
   height: 2px;
   border-radius: 999px;
-  background: rgba(31, 29, 26, 0.35);
+  background: rgba(31, 29, 26, 0.45);
+  position: relative;
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: auto;
 }
 
+/* Extra line for the handle */
 .drag-handle::before {
-  top: 4px;
+  box-shadow: 0 5px 0 rgba(31, 29, 26, 0.45);
+  margin-top: -5px;
 }
 
-.drag-handle::after {
-  bottom: 4px;
-}
 
 .task.dragging .drag-handle {
   cursor: grabbing;
